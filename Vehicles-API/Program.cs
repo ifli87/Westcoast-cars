@@ -13,6 +13,7 @@ options.UseSqlite(builder.Configuration.GetConnectionString("Sqlite")));
 // builder.Services.AddScoped<Interface, konkret klass som implementerar föregående interface>
 
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IManufacturerRepository, ManufacturerRepository>();
 
 //  add automapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles).Assembly);

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Vehicles_API.Models;
 using Vehicles_API.ViewModels;
+using Vehicles_API.ViewModels.Manufacturer;
 
 namespace Vehicles_API.Helpers
 {
@@ -23,9 +24,12 @@ namespace Vehicles_API.Helpers
             // .Formember vart ska vi och hur tar vi oss dit
             CreateMap<Vehicle, VehicleViewModel>()
             .ForMember(dest => dest.VehicleId, options => options
-            .MapFrom(src => src.Id))
-            .ForMember(dest => dest.VehicleName, options => options
-            .MapFrom(src => string.Concat(src.Maker, " ", src.Model)));
+            .MapFrom(src => src.Id));
+            // .ForMember(dest => dest.VehicleName, options => options
+            // .MapFrom(src => string.Concat(src.Maker, " ", src.Model)));
+            CreateMap<PostManufacturerViewModel, Manufacturer>();
+            CreateMap<Manufacturer , ManufacturerViewModel>()
+            .ForMember(dest => dest.ManufacturerId, options => options.MapFrom(src => src.Id));
             
         }
     }

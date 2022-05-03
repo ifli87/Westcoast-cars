@@ -12,15 +12,15 @@ namespace Vehicles_API.Controllers
     [Route("api/v1/vehicles")]
     public class VehiclesController : ControllerBase
     {
-        private readonly VehicleContext _context;
+    
         private readonly IVehicleRepository _vehicleRepo;
         private readonly IMapper _mapper;
     
-        public VehiclesController(VehicleContext context, IVehicleRepository vehicleRepo,IMapper mapper)
+        public VehiclesController( IVehicleRepository vehicleRepo,IMapper mapper)
         {
             _mapper = mapper;
             _vehicleRepo = vehicleRepo;
-            _context = context;
+        
 
         }
 
@@ -82,59 +82,98 @@ namespace Vehicles_API.Controllers
            return Ok(response);
        }
 
+       [HttpGet("bymake/{maker}")]
+       public async Task<ActionResult<List<VehicleViewModel>>> GetVehicleByMaker(string maker)
+       {
+        //  return Ok(await _vehicleRepo.GetVehicleByMaker(maker));
+        return Ok();
+       }
+
 
 
        [HttpPost]
-       public  async  Task <ActionResult<Vehicle>> AddVehicle (PostVehicleViewModel vehicle)
+       public async Task <ActionResult> AddVehicle (PostVehicleViewModel model)
        {
-        //    var vehicleToAdd = new Vehicle
-        //    {
-        //        RegNo = vehicle.RegNo,
-        //        Maker = vehicle.Maker,
-        //        Model = vehicle.Model,
-        //        ModelYear = vehicle.ModelYear,
-        //        Mileage = vehicle.Mileage
-        //    };
-            var vehicleToAdd = _mapper.Map<Vehicle>(vehicle);
-           await _context.Vehicles.AddAsync(vehicleToAdd);
-           await _context.SaveChangesAsync();
-          return StatusCode(201, vehicleToAdd);
+         try
+         {
+               if(await _vehicleRepo.GetVehicleAsync(model.RegNo!.ToLower())is not null)
+           {
+               return BadRequest ($"Registreringsnummer {model.RegNo} finns redan i systemet ");
+           }
+
+           await _vehicleRepo.AddVehicleAsync(model);
+
+            if (await _vehicleRepo.SaveAllAsync())
+            {
+
+          return StatusCode(201);
+            }
+            return StatusCode(500, "Det gick innte att spara fordonet!");
+         }
+         catch (Exception ex)
+         {
+           
+          return StatusCode(500, ex.Message);
+         }
+
+       
        }
 
 
 
            [HttpPut("{id}")]
-       public async Task<ActionResult> UpdateVehicle (int id, Vehicle model)
-       {
-           var response = await _context.Vehicles.FindAsync(id);
-            if (response is null) return NotFound($"vi kunde inte hitta någon bil med id {id} so skulle tas bort ");
+       public async Task<ActionResult> UpdateVehicle (int id, PostVehicleViewModel model)
+         {
+      try
+      {
+        await _vehicleRepo.UpdateVehicle(id, model);
 
-            response.RegNo = model.RegNo;
-            response.Maker = model.Maker;
-            response.Model = model.Model;
-            response.ModelYear = model.ModelYear;
-            response.Mileage = model.Mileage;
+        if (await _vehicleRepo.SaveAllAsync())
+        {
+          return NoContent(); //Status kod 204...
+        }
 
-            _context.Vehicles.Update(response);
-            await _context.SaveChangesAsync();
+        return StatusCode(500, "Ett fel inträffade när fordonet skulle uppdateras");
 
-           return NoContent();
-       }
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, ex.Message);
+      }
+    }
 
-
-
-          [HttpDelete("{id}")]
-       public async Task<ActionResult> DeleteVehicle (int id)
-       {
-
-            _vehicleRepo.DeleteVehicle(id);
-
-                                   
-          if( await _vehicleRepo.SaveAllAsync()){
-
-           return NoContent();
+        [HttpPatch("{{id}")]
+        public async Task<ActionResult> UpdateVehicle (int id, PatchVehicleViewModel model)
+        {
+          try
+          {
+            await _vehicleRepo.UpdateVehicle(id, model);
+            if(await _vehicleRepo.SaveAllAsync())
+            {
+              return NoContent();
+            }
+            return StatusCode (500,"Ett fel inträffade när fordonnet skulle uppdateras");
           }
-          return StatusCode(500, "Hoppsan något gick fel");
-       }
+          catch (Exception ex)
+          {
+            return StatusCode (500, ex.Message);
+          }
+        }
+
+
+
+       [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteVehicle(int id)
+    {
+      await _vehicleRepo.DeleteVehicle(id);
+
+      if (await _vehicleRepo.SaveAllAsync())
+      {
+        return NoContent(); // Status kod 204
+      }
+
+      return StatusCode(500, "Hoppsan något gick fel");
+
+    }
     }
 }

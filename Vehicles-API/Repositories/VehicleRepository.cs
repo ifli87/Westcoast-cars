@@ -25,14 +25,27 @@ namespace Vehicles_API.Repositories
             
         }
 
-        public Task AddVehicleAsync(Vehicle model)
+        public async Task AddVehicleAsync(PostVehicleViewModel model)
         {
+            // steg 1 omvandla postvehicleviewmodel till vehicle typen
+            var maker = await _context.Manufacturers.Include(c => c.Vehicles).Where(c =>c.Name!.ToLower() == model.Maker!.
+            ToLower()).SingleOrDefaultAsync();
+
+            if(maker is null)
+            {
+                throw new Exception($"Tyvärr vi har inte tillverkaren {model.Maker} i systenet");
+            }
+            var vehicleToAdd = _mapper.Map<Vehicle>(model);
+            vehicleToAdd.Manufacturer = maker;
+            await _context.Vehicles.AddAsync(vehicleToAdd);
+          
+            
             throw new NotImplementedException();
         }
 
-        public void DeleteVehicle(int id)
+        public async Task  DeleteVehicle(int id)
         {
-             var response =  _context.Vehicles.Find(id);
+             var response = await _context.Vehicles.FindAsync(id);
 
             if(response is not null) {
 
@@ -70,6 +83,14 @@ namespace Vehicles_API.Repositories
             .SingleOrDefaultAsync();
         }
 
+        // public async Task<List<VehicleViewModel>> GetVehicleByMaker(string maker)
+        // {
+        //      return await _context.Vehicles
+        //     .Where(c => c.Maker!.ToLower() == maker.ToLower())
+        //     .ProjectTo<VehicleViewModel>(_mapper.ConfigurationProvider)
+        //     .ToListAsync();
+        // }
+
         public async Task<List<VehicleViewModel>> ListAllVehiclesAsync()
         {
            return await _context.Vehicles.ProjectTo<VehicleViewModel>(_mapper.ConfigurationProvider).ToListAsync();
@@ -82,9 +103,37 @@ namespace Vehicles_API.Repositories
 
         
 
-        public void UpdateVehicle(int id, Vehicle model)
+        public async Task UpdateVehicle(int id, PostVehicleViewModel model)
         {
-            throw new NotImplementedException();
+            var vehicle = await _context.Vehicles.FindAsync(id);
+
+            if (vehicle is null)
+            {
+                throw new Exception($"Vi kunde inte hitta något fordon med id: {id}");
+            }
+            vehicle.RegNo = model.RegNo;
+            // vehicle.Maker = model.Maker;
+            vehicle.Model = model.Model;
+            vehicle.ModelYear = model.ModelYear;
+            vehicle.Mileage = model.Mileage;
+            
+            _context.Vehicles.Update(vehicle);
+            
+            
+        }
+
+        public async Task UpdateVehicle(int id, PatchVehicleViewModel model)
+        {
+             var vehicle = await _context.Vehicles.FindAsync(id);
+
+            if (vehicle is null)
+            {
+                throw new Exception($"Vi kunde inte hitta något fordon med id: {id}");
+            }
+            vehicle.ModelYear = model.ModelYear;
+            vehicle.Mileage = model.Mileage;
+
+            _context.Vehicles.Update(vehicle);
         }
     }
 }
